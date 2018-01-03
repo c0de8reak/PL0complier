@@ -189,7 +189,7 @@ class LexAnalysis{
      void showError(){
 		err = err + 1;
        	cout << endl;
-		cout << "ERROR 24 in line " << line << ":";
+		cout << "ERROR -2 in line " << line << ":";
 		cout << "Exist illegal symbol ,cannot recognize the word " << endl;       //´æÔÚ·Ç·¨·ûºÅ
     }
 

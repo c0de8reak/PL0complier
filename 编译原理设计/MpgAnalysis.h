@@ -149,6 +149,7 @@ class MpgAnalysis{
 		 if (!inset(rv[terPtr].getId(), s1))
 		 {
 			 showError(n,"");
+			 errorHapphen = true;
 			 /* 当检测不通过时，不停获取符号，直到它属于需要的集合或补救的集合 */
 			 while ((!inset(rv[terPtr].getId(), s1)) && (!inset(rv[terPtr].getId(), s2)))
 			 {
@@ -247,7 +248,7 @@ class MpgAnalysis{
 			} if (rv[terPtr].getId() == PROC){
 				memcpy(nxtlev, fsys, sizeof(bool)* symnum);
 				//nxtlev[PROC] = true;
-				//nxtlev[BEG] = true;
+				nxtlev[BEG] = true;
 				//nxtlev[SEMIC] = true;
 				proc(nxtlev);
 				level--;
@@ -855,34 +856,34 @@ class MpgAnalysis{
 		}
 		else if (rv[terPtr].getId() == SYM){      //赋值语句
 			string name = rv[terPtr].getValue();
-			terPtr++;
-			if (rv[terPtr].getId() == CEQU){
-				terPtr++;
-				memcpy(nxtlev, fsys, sizeof(bool)*symnum);
-				//nxtlev[ADD] = true;
-				//nxtlev[SUB] = true;
-				exp(nxtlev);
-				if (!STable.isPreExistSTable(name, level)){        //检查标识符是否在符号表中存在
-					errorHapphen = true;
-					showError(14, name);
-					//return;
-				}//if判断在符号表中是否有此变量
-				else{           //sto未定义变量的错误
-					TableRow tempTable = STable.getRow(STable.getNameRow(name));
-					if (tempTable.getType() == STable.getVar()){           //检查标识符是否为变量类型
-						Pcode.gen(Pcode.getSTO(), level - tempTable.getLevel(), tempTable.getAddress());  //STO L ，a 将数据栈栈顶的内容存入变量
-					}////检查标识符是否为变量类型
-					else{       //类型不一致的错误
-						errorHapphen = true;
-						showError(13, name);
-						//return;
-					}
-				}
-			}
-			else{
+			if (!STable.isPreExistSTable(name, level)){        //检查标识符是否在符号表中存在
 				errorHapphen = true;
-				showError(3, "");
+				showError(14, name);
 				//return;
+			}//if判断在符号表中是否有此变量
+			else
+			{
+				TableRow tempTable = STable.getRow(STable.getNameRow(name));
+				if (tempTable.getType() == STable.getVar()){           //检查标识符是否为变量类型
+					terPtr++;
+					if (rv[terPtr].getId() == CEQU){
+						terPtr++;
+					}
+					else{           //未检测到有赋值符号:=
+						errorHapphen = true;
+						showError(3, "");
+					}
+					memcpy(nxtlev, fsys, sizeof(bool)*symnum);
+					//nxtlev[ADD] = true;
+					//nxtlev[SUB] = true;
+					exp(nxtlev);
+					Pcode.gen(Pcode.getSTO(), level - tempTable.getLevel(), tempTable.getAddress());  //STO L ，a 将数据栈栈顶的内容存入变量
+				}////检查标识符是否为变量类型
+				else{       //类型不一致的错误
+					errorHapphen = true;
+					showError(13, name);
+					//return;
+				}	
 			}
 		}
 		else{
@@ -890,6 +891,9 @@ class MpgAnalysis{
 			showError(1, "");
 			//return;
 		}
+		//memcpy(nxtlev, statbegsys, sizeof(bool)* symnum);
+		memset(nxtlev, 0, sizeof(bool)* symnum);
+		test(fsys, nxtlev, 24);
 	}
 
 	 void lexp(bool* fsys){
@@ -1187,7 +1191,7 @@ class MpgAnalysis{
 			 cout << "wrong token" << endl;        //常量定义不是const开头,变量定义不是var 开头
 			 break;
 		 case 0:
-			 cout << "ERROR " << i << " " << "in line " << (rv[terPtr].getLine() - 1) << ":";
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
 			 cout << "Missing semicolon" << endl;        //缺少分号
 			 break;
 		 case 1:
@@ -1281,6 +1285,10 @@ class MpgAnalysis{
 		 case 23:
 			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
 			 cout << "The follow symbol of the body part of the block is incorrect" << endl;    //block内body部分的后跟符不正确
+			 break;
+		 case 24:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "The follow symbol of statement is incorrect" << endl;    //语句后的符号不正确。
 			 break;
 		 }
 
