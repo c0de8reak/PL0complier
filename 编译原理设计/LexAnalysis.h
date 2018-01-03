@@ -70,6 +70,7 @@ class LexAnalysis{
      int searchPtr=0;
      int line=1;
      bool errorHappen=false;
+	 int err = 0;				//错误的个数
 	public:
      LexAnalysis(string _filename){
         for(int i=0;i<symLength;i++){
@@ -186,9 +187,10 @@ class LexAnalysis{
     //上面的所有函数参考书上的伪码程序即可
 
      void showError(){
+		err = err + 1;
        	cout << endl;
-        cout <<"ERROR: cannot recognize the word in line "<< line;
-        cout << endl;
+		cout << "ERROR 24 in line " << line << ":";
+		cout << "Exist illegal symbol ,cannot recognize the word " << endl;       //存在非法符号
     }
 
     /**
@@ -332,16 +334,22 @@ class LexAnalysis{
                 retract();
             }
         }
-        errorHappen=true;
-        return rv;
-
+		else
+		{
+			//errorHappen = true;
+			showError();
+			rv.setId(NUL);
+			rv.setValue("-");
+			rv.setLine(line);
+			return rv;
+		}
     }
 
 
 /**
  * 循环识别出所有字符并输出到文件lex.txt中
  * */
-     void bAnalysis(){
+     int bAnalysis(){
         preManage();
         RValue temp;
         string str="lex.txt";
@@ -351,7 +359,7 @@ class LexAnalysis{
         	cout << "打开文件失败！" << endl;
         	exit(0);
 		}
-        while(searchPtr<buffer_length&&errorHappen==false){
+        while(searchPtr<buffer_length){
         	
             temp=analysis();
            /* string tempId=string.valueOf(temp.getId()),tempLine=string.valueOf(temp.getLine());
@@ -367,9 +375,10 @@ class LexAnalysis{
             outfile << temp.getId() << " " << temp.getValue() << " " << temp.getLine() << endl;
         }//while
         outfile.close();
-        if(errorHappen==true){
+		return err;
+        /*if(errorHappen==true){
             showError();
-        }
+        }*/
     }
 };
 #endif

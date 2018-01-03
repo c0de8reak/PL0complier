@@ -57,7 +57,7 @@ class MpgAnalysis{
 	 int levMax = 3;       //最大嵌套深度
 	 SymbolTable STable;       //符号表
 	 AllPcode  Pcode ;                 //存放目标代码
-
+	 int err = 0;			//错误的个数
 
 	 int level = 0;                //主程序为第0层
 	 int address = 0;             //主程序或变量的声明是为0
@@ -237,7 +237,7 @@ class MpgAnalysis{
 		Pcode.gen(Pcode.getJMP(), 0, 0);
 		if (level > levMax)   //必须先判断嵌套层层数
 		{
-			showError(31, "");		//超过嵌套深度
+			showError(17, "");		//超过嵌套深度
 		}
 		do{
 			if (rv[terPtr].getId() == CON){//此处没有terPtr++
@@ -254,7 +254,7 @@ class MpgAnalysis{
 			}
 			memcpy(nxtlev, fsys, sizeof(bool)* symnum);
 			nxtlev[BEG] = true;
-			test(nxtlev, declbegsys, 21);   //应该是语句开始符begin
+			test(nxtlev, declbegsys, 20);   //应该是语句开始符begin
 		} while (inset(rv[terPtr].getId(), declbegsys));
 		/*
 		* 声明部分完成，进入语句处理部分，之前生成的jmp，0，0应当跳转到这个位置
@@ -277,12 +277,12 @@ class MpgAnalysis{
 		}
 		//body后继符号为分号或end
 		memcpy(nxtlev, fsys, sizeof(bool)* symnum);   //每个后继每个后继符号集合都包含上层后继符号集合，以便补救
-		nxtlev[SEMIC] = true;
-		nxtlev[END] = true;
+		//nxtlev[SEMIC] = true;
+		//nxtlev[END] = true;
 		body(nxtlev);
 		Pcode.gen(Pcode.getOPR(), 0, 0);      //生成退出过程的代码，若是主程序，则直接退出程序
 		memset(nxtlev, 0, sizeof(bool)* symnum);    //block没有补救集合
-		test(fsys, nxtlev, 22);    //检测后续符号的正确性
+		test(fsys, nxtlev, 23);    //检测后续符号的正确性
 		address = addr0;      //分程序结束，恢复相关值
 		STable.setTablePtr(tx0);	
 	}
@@ -563,7 +563,7 @@ class MpgAnalysis{
 				 terPtr++;
 				 nxtlev[PROC] = true;
 				 //nxtlev[BEG] = true;
-				 test(nxtlev, fsys, 20);  //过程说明后的符号不正确，应为过程说明符
+				 test(nxtlev, fsys, 21);  //过程说明后的符号不正确，应为过程说明符
 				 //proc(nxtlev);
 			 }
 		 }	 
@@ -576,8 +576,17 @@ class MpgAnalysis{
 			nxtlev[SEMIC] = true;
 			nxtlev[END] = true;
 			statement(nxtlev);
-			while (rv[terPtr].getId() == SEMIC){
-				terPtr++;
+			while (inset(rv[terPtr].getId(),statbegsys) ||rv[terPtr].getId() == SEMIC )
+			{
+				if (rv[terPtr].getId() == SEMIC)
+				{
+					terPtr++;
+				}
+				else
+				{
+					errorHapphen = true;
+					showError(0, "");
+				}
 				statement(nxtlev);
 			}
 			if (rv[terPtr].getId() == END){
@@ -595,7 +604,6 @@ class MpgAnalysis{
 			//return;
 		}
 	}
-
 	 void statement(bool* fsys){
 		 bool nxtlev[symnum];
 		if (rv[terPtr].getId() == IF){
@@ -785,7 +793,7 @@ class MpgAnalysis{
 				}
 				else{
 					errorHapphen = true;
-					showError(26, "");
+					showError(1, "");
 				}
 			}
 			else{
@@ -977,7 +985,7 @@ class MpgAnalysis{
 
 	 void factor(bool* fsys){
 		 bool nxtlev[symnum];
-		 test(facbegsys, fsys, 24);   /*检测因子的开始符号*/
+		 test(facbegsys, fsys, 22);   /*检测因子的开始符号*/
 		 while (inset(rv[terPtr].getId(), facbegsys))
 		 {
 
@@ -1027,7 +1035,7 @@ class MpgAnalysis{
 			 }*/
 			 memset(nxtlev, 0, sizeof(bool)* symnum);
 			 nxtlev[LBR] = true;
-			 test(fsys, nxtlev, 23); /* 一个因子处理完毕，遇到的单词应在fsys集合中 */
+			 test(fsys, nxtlev, 18); /* 一个因子处理完毕，遇到的单词应在fsys集合中 */
 			 /* 如果不是，报错并找到下一个因子的开始，使语法分析可以继续运行下去 */
 		 }
 	}
@@ -1064,10 +1072,21 @@ class MpgAnalysis{
 	//  void id(){
 
 	//    }
-	 bool mgpAnalysis(){
-		lex->bAnalysis();
+	 bool mgpAnalysis()
+	 {
+		//int err = 0;
+		err = lex->bAnalysis();
 		readLex();
 		prog();
+		if (rv[terPtr].getId() != -1 && rv[terPtr].getId() != -2)
+		{
+			errorHapphen = true;
+			showError(19, "");   //程序结束语法分析异常
+		}
+		if (errorHapphen == true)
+		{
+			cout << endl << err << " Errors in the PL/0 program!" << endl;
+		}
 		return errorHapphen;
 	}
 
@@ -1161,80 +1180,109 @@ class MpgAnalysis{
 	}
 
 	 void showError(int i, string name){
-		switch (i){
-		case -1:
-			cout << "ERROR " << i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "wrong token" << endl;        //常量定义不是const开头,变量定义不是var 开头
-			break;
-		case 0:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  (rv[terPtr].getLine() - 1) <<  ":";
-			cout << "Missing semicolon" << endl;        //缺少分号
-			break;
-		case 1:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Identifier illegal" << endl;       //标识符不合法
-			break;
-		case 2:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "The beginning of program must be 'program'" << endl;       //程序开始第一个字符必须是program
-			break;
-		case 3:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Assign must be ':='" << endl;       //赋值没用：=
-			break;
-		case 4:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Missing '('" << endl;       //缺少左括号
-			break;
-		case 5:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Missing ')'" << endl;       //缺少右括号
-			break;
-		case 6:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Missing 'begin'" << endl;       //缺少begin
-			break;
-		case 7:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Missing 'end'" << endl;       //缺少end
-			break;
-		case 8:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Missing 'then'" << endl;       //缺少then
-			break;
-		case 9:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Missing 'do'" << endl;       //缺少do
-			break;
-		case 10:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Not exist " << "'" << rv[terPtr].getValue() << "'" << endl;       //call，write，read语句中，不存在标识符
-			break;
-		case 11:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "'" << rv[terPtr].getValue() << "'" << "is not a procedure" << endl;       //该标识符不是proc类型
-			break;
-		case 12:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "'" << rv[terPtr].getValue() << "'" << "is not a variable" << endl;       //read，write语句中，该标识符不是var类型
-			break;
-		case 13:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "'" << name << "'" << "is not a variable" << endl;       //赋值语句中，该标识符不是var类型
-			break;
-		case 14:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Not exist" << "'" << name << "'" << endl;       //赋值语句中，该标识符不存在
-			break;
-		case 15:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Already exist" << "'" << name << "'" << endl;       //该标识符已经存在
-			break;
-		case 16:
-			cout << "ERROR " <<  i <<  " " <<  "in line " <<  rv[terPtr].getLine() <<  ":";
-			cout << "Number of parameters of procedure " << "'" << name << "'" << "is incorrect" << endl;       //该标识符已经存在
-			break;
-		}
+		 err = err + 1;
+		 switch (i){
+		 case -1:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "wrong token" << endl;        //常量定义不是const开头,变量定义不是var 开头
+			 break;
+		 case 0:
+			 cout << "ERROR " << i << " " << "in line " << (rv[terPtr].getLine() - 1) << ":";
+			 cout << "Missing semicolon" << endl;        //缺少分号
+			 break;
+		 case 1:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Identifier illegal" << endl;       //标识符不合法
+			 break;
+		 case 2:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "The beginning of program must be 'program'" << endl;       //程序开始第一个字符必须是program
+			 break;
+		 case 3:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Assign must be ':='" << endl;       //赋值没用：=
+			 break;
+		 case 4:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Missing '('" << endl;       //缺少左括号
+			 break;
+		 case 5:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Missing ')'" << endl;       //缺少右括号
+			 break;
+		 case 6:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Missing 'begin'" << endl;       //缺少begin
+			 break;
+		 case 7:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Missing 'end'" << endl;       //缺少end
+			 break;
+		 case 8:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Missing 'then'" << endl;       //缺少then
+			 break;
+		 case 9:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Missing 'do'" << endl;       //缺少do
+			 break;
+		 case 10:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Not exist " << "'" << rv[terPtr].getValue() << "'" << endl;       //call，write，read语句中，不存在标识符
+			 break;
+		 case 11:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "'" << rv[terPtr].getValue() << "'" << "is not a procedure" << endl;       //该标识符不是proc类型
+			 break;
+		 case 12:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "'" << rv[terPtr].getValue() << "'" << "is not a variable" << endl;       //read，write语句中，该标识符不是var类型
+			 break;
+		 case 13:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "'" << name << "'" << "is not a variable" << endl;       //赋值语句中，该标识符不是var类型
+			 break;
+		 case 14:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Not exist" << "'" << name << "'" << endl;       //赋值语句中，该标识符不存在
+			 break;
+		 case 15:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Already exist" << "'" << name << "'" << endl;       //该标识符已经存在
+			 break;
+		 case 16:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Number of parameters of procedure " << "'" << name << "'" << "is incorrect" << endl;       //参数个数不匹配
+			 break;
+		 case 17:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "More than nested deepth" << endl;       //超过嵌套深度
+			 break;
+		 case 18:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Illegal symbol behind the factor" << endl;     //因子后的非法符号
+			 break;
+		 case 19:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "Program end with the exception symbol" << endl;    //程序结束语法分析异常
+			 break;
+		 case 20:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "The symbol should be the \'Begin\'" << endl;    //应该是复合语句起始符
+			 break;
+		 case 21:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "The symbol should be the \'procedure\'" << endl;    //应该是过程定义符
+			 break;
+		 case 22:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "The start of the expression cannot be the symbol" << endl;    //表达式的开始符不能是此符号。
+			 break;
+		 case 23:
+			 cout << "ERROR " << i << " " << "in line " << rv[terPtr].getLine() << ":";
+			 cout << "The follow symbol of the body part of the block is incorrect" << endl;    //block内body部分的后跟符不正确
+			 break;
+		 }
 
 	}
 	 void interpreter(){
