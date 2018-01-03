@@ -247,7 +247,7 @@ class MpgAnalysis{
 			} if (rv[terPtr].getId() == PROC){
 				memcpy(nxtlev, fsys, sizeof(bool)* symnum);
 				//nxtlev[PROC] = true;
-				nxtlev[BEG] = true;
+				//nxtlev[BEG] = true;
 				//nxtlev[SEMIC] = true;
 				proc(nxtlev);
 				level--;
@@ -398,7 +398,7 @@ class MpgAnalysis{
 		}
 	}
 
-	 void proc(bool* fsys){
+	/* void proc(bool* fsys){
 		if (rv[terPtr].getId() == PROC){
 			terPtr++;
 			//id();
@@ -483,8 +483,91 @@ class MpgAnalysis{
 			showError(-1, "");
 			//return;
 		}
-	}
-
+	}*/
+	 void proc(bool* fsys)
+	 {
+		 while(rv[terPtr].getId() == PROC){
+			 terPtr++;
+			 //id();
+			 int count = 0;//用来记录proc中形参的个数
+			 int propos;// 记录本proc在符号表中的位置
+			 if (rv[terPtr].getId() == SYM){
+				 string name = rv[terPtr].getValue();
+				 if (STable.isNowExistSTable(name, level)){
+					 errorHapphen = true;
+					 showError(15, name);
+				 }
+				 propos = STable.getTablePtr();
+				 STable.enterProc(rv[terPtr].getValue(), level, address);
+				 level++;                //level值加一，因为其后的所有定义均在该新的proc中完成
+				 terPtr++;
+			 }
+			 else{
+				 errorHapphen = true;
+				 showError(1, "");
+				 //return;
+			 }
+			 if (rv[terPtr].getId() == LBR)
+			 {
+				 terPtr++;
+				 //id();	 
+			 }
+			 else{
+				 errorHapphen = true;
+				 showError(4, "");
+				 //return;
+			 }
+			 if (rv[terPtr].getId() == SYM){
+				 STable.enterVar(rv[terPtr].getValue(), level, 3 + count);      //3+count+1为形参在存储空间中的位置
+				 count++;
+				 STable.getAllTable()[propos].setSize(count);        //用本过程在符号表中的size域记录形参的个数
+				 terPtr++;
+				 while (rv[terPtr].getId() == COMMA){
+					 terPtr++;
+					 if (rv[terPtr].getId() == SYM){
+						 STable.enterVar(rv[terPtr].getValue(), level, 3 + count);      //3+count+1为形参在存储空间中的位置
+						 count++;
+						 STable.getAllTable()[propos].setSize(count);        //用本过程在符号表中的size域记录形参的个数
+						 terPtr++;
+					 }
+					 else{
+						 errorHapphen = true;
+						 showError(1, "");
+						 //return;
+					 }
+				 }
+			 }
+			 if (rv[terPtr].getId() == RBR){
+				 terPtr++;
+				 }
+			 else
+			 {
+				 errorHapphen = true;
+				 showError(5, "");
+				 //return;
+			 }
+			 if (rv[terPtr].getId() != SEMIC){
+				 errorHapphen = true;
+				 showError(0, "");
+				 //return;
+			 }
+			 else
+			 {
+				 terPtr++;
+			 }
+			 bool nxtlev[symnum];
+			 memcpy(nxtlev, fsys, sizeof(bool)* symnum);
+			 nxtlev[SEMIC] = true;
+			 block(nxtlev);   //注意取消参数level的传递
+			 if (rv[terPtr].getId() == SEMIC){
+				 terPtr++;
+				 nxtlev[PROC] = true;
+				 //nxtlev[BEG] = true;
+				 test(nxtlev, fsys, 20);  //过程说明后的符号不正确，应为过程说明符
+				 //proc(nxtlev);
+			 }
+		 }	 
+	 }
 	 void body(bool* fsys){
 		 bool nxtlev[symnum];
 		if (rv[terPtr].getId() == BEG){
