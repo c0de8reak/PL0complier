@@ -60,8 +60,8 @@ class MpgAnalysis{
 	 int err = 0;			//错误的个数
 
 	 int level = 0;                //主程序为第0层
-	 int address = 0;             //主程序或变量的声明是为0
-	 int addrIncrement = 1;//TabelRow中的address的增量，常量、过程的定义登录进符号表均不会使其增加，但是为什么
+	 int address = 0;             //主程序或常量的声明是为0
+	 int addrIncrement = 1;//TabelRow中的address的增量，常量、过程的定义登录进符号表均不会使其增加
 
 	public:
 	 MpgAnalysis(string filename){
@@ -273,7 +273,7 @@ class MpgAnalysis{
 			// STable.getRow(tx0).setValue(Pcode.getCodePtr());     //将本过程在符号表中的值设为本过程执行语句开始的位置
 		}
 		else {
-			STable.getAllTable()[propos].setValue(Pcode.getCodePtr() - 1 - STable.getAllTable()[propos].getSize());     //将本过程在符号表中的值设为本过程执行语句开始的位置
+			STable.getAllTable()[propos].setAddress(Pcode.getCodePtr() - 1 - STable.getAllTable()[propos].getSize());     //将本过程在符号表中的地址设为本过程执行语句开始的位置
 
 		}
 		//body后继符号为分号或end
@@ -326,7 +326,7 @@ class MpgAnalysis{
 						errorHapphen = true;
 						showError(15, name);
 					}
-					STable.enterConst(name, level, value, address);
+					STable.enterConst(name, level, value, 0);
 					//                   address+=addrIncrement;             //登录符号表后地址加1指向下一个
 					terPtr++;
 				}
@@ -685,7 +685,7 @@ class MpgAnalysis{
 					terPtr++;
 					if (rv[terPtr].getId() == RBR){
 						terPtr++;
-						Pcode.gen(Pcode.getCAL(), level - tempRow.getLevel(), tempRow.getValue());        //调用过程中的保存现场由解释程序完成，这里只产生目标代码,+3需详细说明
+						Pcode.gen(Pcode.getCAL(), level - tempRow.getLevel(), tempRow.getAddress());        //调用过程中的保存现场由解释程序完成，这里只产生目标代码,+3需详细说明
 					}
 					else{
 						memcpy(nxtlev, fsys, sizeof(bool)*symnum);
@@ -706,7 +706,7 @@ class MpgAnalysis{
 							//return;
 							//terPtr++;
 						}
-						Pcode.gen(Pcode.getCAL(), level - tempRow.getLevel(), tempRow.getValue());        //调用过程中的保存现场由解释程序完成，这里只产生目标代码,+3需详细说明
+						Pcode.gen(Pcode.getCAL(), level - tempRow.getLevel(), tempRow.getAddress());        //调用过程中的保存现场由解释程序完成，这里只产生目标代码,+3需详细说明
 						if (rv[terPtr].getId() == RBR){
 							terPtr++;
 						}
@@ -1096,10 +1096,12 @@ class MpgAnalysis{
 
 	 void showtable(){
 		 cout << "type,name,level,address,value,size" << endl;
+		 cout.setf(ios::left);
 		for (int i = 0; i<STable.getLength(); i++){
-			cout << STable.getRow(i).getType() << "  " << STable.getRow(i).getName() << "  " << STable.getRow(i).getLevel() << "  " << STable.getRow(i).getAddress() << "  " << STable.getRow(i).getValue() <<
-				"  " << STable.getRow(i).getSize() << endl;
+			cout << setw(5) <<STable.getRow(i).getType() << setw(5) << STable.getRow(i).getName() << setw(6) << STable.getRow(i).getLevel() << setw(8) << STable.getRow(i).getAddress() << setw(6) << STable.getRow(i).getValue() <<
+				setw(5) << STable.getRow(i).getSize() << endl;
 		}
+		cout.unsetf(ios::left);
 	}
 
 	 void showPcode(){

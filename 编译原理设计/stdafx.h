@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #include<fstream>
+#include<iomanip>
 #include"LexAnalysis.h"
 #include"AllPcode.h"
 #include"PerPcode.h"
