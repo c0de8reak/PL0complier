@@ -1,0 +1,16 @@
+program main;
+const a:=10;
+var b,c;
+procedure p(;
+begin
+c:=b+a1
+end
+begin
+read(b1);
+while b>0 do
+begin
+call p();
+write(c);
+read(b)
+end
+end
