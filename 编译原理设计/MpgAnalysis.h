@@ -665,7 +665,7 @@ class MpgAnalysis{
 			TableRow tempRow;
 			if (rv[terPtr].getId() == SYM){
 				if (STable.isPreExistSTable(rv[terPtr].getValue(), level)){        //符号表中存在该标识符
-					tempRow = STable.getRow(STable.getNameRow(rv[terPtr].getValue()));  //获取该标识符所在行的所有信息，保存在tempRow中
+					tempRow = STable.getRow(STable.getNameRow(rv[terPtr].getValue(),level));  //获取该标识符所在行的所有信息，保存在tempRow中
 					if (tempRow.getType() == STable.getProc()) { //判断该标识符类型是否为procedure，SymTable中procdure类型用proc变量来表示，
 						;
 					}       //if类型为proc
@@ -706,8 +706,8 @@ class MpgAnalysis{
 							//return;
 							//terPtr++;
 						}
-						Pcode.gen(Pcode.getCAL(), level - tempRow.getLevel(), tempRow.getAddress());        //调用过程中的保存现场由解释程序完成，这里只产生目标代码,+3需详细说明
 						if (rv[terPtr].getId() == RBR){
+							Pcode.gen(Pcode.getCAL(), level - tempRow.getLevel(), tempRow.getAddress());        //调用过程中的保存现场由解释程序完成，这里只产生目标代码,+3需详细说明
 							terPtr++;
 						}
 						else{
@@ -745,7 +745,7 @@ class MpgAnalysis{
 
 					}//if判断在符号表中是否有此变量
 					else{           //sto未定义变量的错误
-						TableRow tempTable = STable.getRow(STable.getNameRow(rv[terPtr].getValue()));
+						TableRow tempTable = STable.getRow(STable.getNameRow(rv[terPtr].getValue(),level));
 						if (tempTable.getType() == STable.getVar()){       //该标识符是否为变量类型
 							Pcode.gen(Pcode.getOPR(), 0, 16);         //OPR 0 16	从命令行读入一个输入置于栈顶   //层差的含义所在？？直接用嵌套的层次数作为参数不可以吗？
 							Pcode.gen(Pcode.getSTO(), level - tempTable.getLevel(), tempTable.getAddress());  //STO L ，a 将数据栈栈顶的内容存入变量（相对地址为a，层次差为L）
@@ -770,7 +770,7 @@ class MpgAnalysis{
 
 							}//if判断在符号表中是否有此变量
 							else{           //sto未定义变量的错误
-								TableRow tempTable = STable.getRow(STable.getNameRow(rv[terPtr].getValue()));
+								TableRow tempTable = STable.getRow(STable.getNameRow(rv[terPtr].getValue(),level));
 								if (tempTable.getType() == STable.getVar()){       //该标识符是否为变量类型
 									Pcode.gen(Pcode.getOPR(), 0, 16);         //OPR 0 16	从命令行读入一个输入置于栈顶   //层差的含义所在？？直接用嵌套的层次数作为参数不可以吗？
 									Pcode.gen(Pcode.getSTO(), level - tempTable.getLevel(), tempTable.getAddress());  //STO L ，a 将数据栈栈顶的内容存入变量（相对地址为a，层次差为L）
@@ -863,7 +863,7 @@ class MpgAnalysis{
 			}//if判断在符号表中是否有此变量
 			else
 			{
-				TableRow tempTable = STable.getRow(STable.getNameRow(name));
+				TableRow tempTable = STable.getRow(STable.getNameRow(name,level));
 				if (tempTable.getType() == STable.getVar()){           //检查标识符是否为变量类型
 					terPtr++;
 					if (rv[terPtr].getId() == CEQU){
@@ -1018,7 +1018,7 @@ class MpgAnalysis{
 					// return;
 				 }//if判断在符号表中是否有此变量
 				 else{           //未定义变量的错误
-					 TableRow tempRow = STable.getRow(STable.getNameRow(name));
+					 TableRow tempRow = STable.getRow(STable.getNameRow(name,level));
 					 if (tempRow.getType() == STable.getVar()){ //标识符是变量类型
 						 Pcode.gen(Pcode.getLOD(), level - tempRow.getLevel(), tempRow.getAddress());    //变量，LOD L  取变量（相对地址为a，层差为L）放到数据栈的栈顶
 					 }

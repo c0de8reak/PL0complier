@@ -224,6 +224,14 @@ DL：调用者的活动记录首地址？
                     break;
                 case 5:  //INT 0 ，a 数据栈栈顶指针增加a
                     T=T+IP.getA();
+					if (code.getPcodeArray()[P - 2].getF() == code.getSTO())
+					{
+						for (int i = T - IP.getA(); i < T; i++)
+						{
+							dataStack[i] = dataStack[i + IP.getA() - 3];
+						}
+						B = B - IP.getA() + 3;
+					}
                     break;
                 case 6://JMP 0 ，a无条件转移到地址为a的指令
                     P=IP.getA();
@@ -232,6 +240,7 @@ DL：调用者的活动记录首地址？
                     if(dataStack[T-1]==0){
                         P=IP.getA();
                     }
+					T--;
                     break;
             }
         }while(P!=0);

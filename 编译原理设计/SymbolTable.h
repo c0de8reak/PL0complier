@@ -134,9 +134,9 @@ class SymbolTable {
 
 
     //返回符号表中名字为name的行的行号
-     int  getNameRow(string name){
+     int  getNameRow(string name,int level){
         for(int i=length-1;i>=0;i--){
-            if(table[i].getName().compare(name)==0){
+            if(table[i].getName().compare(name)==0 && table[i].getLevel() <= level){
                 return i;
             }
         }
