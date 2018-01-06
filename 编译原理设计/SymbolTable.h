@@ -3,8 +3,7 @@
 #include<iostream>
 #include<string>
 #include"TableRow.h"
-/**
- * Created by 
+/** 
  * 尚未判断超出Max值产生的错误
  * SymTable符号表，每一列的具体含义见TableRow
  */
@@ -142,6 +141,14 @@ class SymbolTable {
         }
         return -1;          //返回-1表示不存在该名字
     }
+	 int getaddrProcSize(int findaddr)
+	 {
+		 for (int i = 0; i < length - 1; i++)
+		 {
+			 if (table[i].getAddress() == findaddr && table[i].getType() == proc)
+				 return table[i].getSize();
+		 }
+	 }
      int getTablePtr() {
         return tablePtr;
     }

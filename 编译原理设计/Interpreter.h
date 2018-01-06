@@ -77,6 +77,7 @@ DL：调用者的活动记录首地址？
      int stackSize=1000;
      int stack_increment=100;
      int max_stack_size=10000;
+	 int count = 0;  //函数参数的个数
 	 int *dataStack;     //数据存储器STACK，初始值为1000
      AllPcode code;            //存储器CODE，用来存放P的代码
 	public:
@@ -89,7 +90,7 @@ DL：调用者的活动记录首地址？
      AllPcode getCode(){
         return code;
     }
-     void interpreter(){
+     void interpreter(SymbolTable &table){
         P=0;
         B=0;
         T=0;
@@ -193,6 +194,7 @@ DL：调用者的活动记录首地址？
                         case 14:
                             cout << dataStack[T-1];
                             cout << "  ";     //便于观察，再输出一个空格
+							T--;
                             break;
                         case 15:
                            cout << endl;
@@ -221,6 +223,7 @@ DL：调用者的活动记录首地址？
                     dataStack[T+2]=P;
                     B=T;
                     P=IP.getA();
+					count = table.getaddrProcSize(IP.getA());
                     break;
                 case 5:  //INT 0 ，a 数据栈栈顶指针增加a
                     T=T+IP.getA();
@@ -228,9 +231,10 @@ DL：调用者的活动记录首地址？
 					{
 						for (int i = T - IP.getA(); i < T; i++)
 						{
-							dataStack[i] = dataStack[i + IP.getA() - 3];
+							dataStack[i] = dataStack[i + count];
 						}
-						B = B - IP.getA() + 3;
+						B = B - count;
+						count = 0;
 					}
                     break;
                 case 6://JMP 0 ，a无条件转移到地址为a的指令
